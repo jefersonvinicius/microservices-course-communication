@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"time"
 
 	"github.com/jefersonvinicius/microservices-course-communication/grpc/pb"
 	"google.golang.org/grpc"
@@ -20,9 +21,9 @@ func main() {
 
 	client := pb.NewUserServiceClient(connection)
 
-	AddUserVerbose(client)
 	// AddUser(client)
-
+	// AddUserVerbose(client)
+	AddUsers(client)
 }
 
 func AddUser(client pb.UserServiceClient) { // Using request unidirectional
@@ -41,7 +42,7 @@ func AddUser(client pb.UserServiceClient) { // Using request unidirectional
 	fmt.Println(res)
 }
 
-func AddUserVerbose(client pb.UserServiceClient) { // Using request with stream
+func AddUserVerbose(client pb.UserServiceClient) { // Getting data with stream
 	req := &pb.User{
 		Id:    "0",
 		Name:  "Jeferson Vinícius",
@@ -65,4 +66,40 @@ func AddUserVerbose(client pb.UserServiceClient) { // Using request with stream
 
 		fmt.Println("Status:", stream.Status)
 	}
+}
+
+func AddUsers(client pb.UserServiceClient) { // Sending data with stream
+	reqs := []*pb.User{
+		{
+			Id:    "1",
+			Name:  "Jeferson",
+			Email: "jeferson@gmail.com",
+		},
+		{
+			Id:    "2",
+			Name:  "Isadora",
+			Email: "isadora@gmail.com",
+		},
+		{
+			Id:    "3",
+			Name:  "Ricardo",
+			Email: "ricardo@gmail.com",
+		},
+	}
+
+	stream, err := client.AddUsers(context.Background())
+	if err != nil {
+		log.Fatalf("Error on create stream: %v", err)
+	}
+
+	for _, req := range reqs {
+		stream.Send(req)
+		time.Sleep(time.Second * 2)
+	}
+
+	res, err := stream.CloseAndRecv()
+	if err != nil {
+		log.Fatalf("Error receiving response: %v", err)
+	}
+	fmt.Println(res)
 }
