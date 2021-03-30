@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/jefersonvinicius/microservices-course-communication/grpc/pb"
@@ -94,4 +96,30 @@ func (*UserService) AddUsers(stream pb.UserService_AddUsersServer) error {
 
 	}
 
+}
+
+func (*UserService) AddUserStreamBoth(stream pb.UserService_AddUserStreamBothServer) error {
+	for {
+		req, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+
+		if err != nil {
+			log.Fatalf("Error receiving stream: %v", err)
+		}
+
+		id := strconv.Itoa(rand.Intn(100))
+		err = stream.Send(&pb.UserResultStream{
+			Status: "Added",
+			User: &pb.User{
+				Id:    id,
+				Name:  req.GetName(),
+				Email: req.GetEmail(),
+			},
+		})
+		if err != nil {
+			log.Fatalf("Error receiving stream: %v", err)
+		}
+	}
 }
